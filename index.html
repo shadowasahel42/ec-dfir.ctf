@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>EC-Council Hackerverse DFIR CTF — Writeup</title>
+  <style>
+    :root {
+      --bg: #050a06;
+      --panel: #0a140c;
+      --g: #00ff41;
+      --g2: #39d353;
+      --dim: #2e8b3d;
+      --txt: #b6f5c0;
+      --warn: #ffcc00;
+      --bad: #ff5555;
+      --line: #14301a;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #050a06; }
+    }
+
+    :root[data-theme="dark"] { --bg: #050a06; }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--txt);
+      font: 14px/1.55 "DejaVu Sans Mono", "Fira Code", Consolas, monospace;
+    }
+
+    .w {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .bar {
+      background: #0d1f10;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+      border-radius: 8px 8px 0 0;
+      padding: 6px 12px;
+      color: var(--dim);
+      font-size: 12px;
+    }
+
+    .bar b { color: var(--g); }
+
+    .win {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 0 0 8px 8px;
+      padding: 14px;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      color: var(--g);
+      font-size: 20px;
+      margin: 0 0 6px;
+      text-shadow: 0 0 8px #00ff4155;
+    }
+
+    h2 {
+      color: var(--g);
+      font-size: 16px;
+      margin: 0 0 10px;
+    }
+
+    h3 {
+      color: var(--g2);
+      font-size: 14px;
+      margin: 16px 0 6px;
+    }
+
+    .pr {
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--g);
+      margin: 10px 0 2px;
+      overflow-x: auto;
+    }
+
+    /* Prompt with kali@kali — exactly as requested */
+    .pr::before {
+      content: "┌──(" "kali㉿kali" ")-[" attr(data-d) "]\A└─$ ";
+      color: var(--dim);
+      white-space: pre;
+    }
+
+    .o {
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0 0 6px;
+      color: var(--txt);
+      overflow-x: auto;
+    }
+
+    .c { color: var(--dim); }
+
+    .f {
+      color: #000;
+      background: var(--g);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+
+    .warn { color: var(--warn); }
+    .bad { color: var(--bad); }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      display: block;
+      overflow-x: auto;
+    }
+
+    td, th {
+      border: 1px solid var(--line);
+      padding: 5px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--g);
+      background: #0d1f10;
+    }
+
+    img {
+      max-width: 100%;
+      border: 1px solid var(--g);
+      border-radius: 6px;
+      box-shadow: 0 0 14px #00ff4144;
+    }
+
+    .box {
+      border: 1px dashed var(--bad);
+      padding: 10px;
+      border-radius: 6px;
+      color: #ffb0b0;
+      margin-top: 8px;
+    }
+
+    .pend { color: var(--warn); }
+  </style>
+</head>
+<body>
+<div class="w">
+
+  <!-- ========== HEADER / CERTIFICATE ========== -->
+  <div class="bar"><b>kali@kali</b>: ~/hackerverse-dfir — Terminal</div>
+  <div class="win">
+    <h1>[ EC-Council Hackerverse CTF — DFIR Writeup ]</h1>
+    <div class="pr" data-d="~/hackerverse-dfir">cat README.md</div>
+    <div class="o">Event      : EC-Council Hackerverse CTF — Digital Forensics &amp; Incident Response (DFIR)
+Participant: Asahel Kipkemei
+Level      : Journeyman
+Issued     : 3rd Oct 2026   |  CPE Credits: 1  |  Certificate No.: 1998
+Platform   : EC-Council lab (Kali Linux + Windows Forensic VM)
+Sections   : 1) Cryptic Canvas  2) Network Forensics (Synixon)  3) Autopsy / Chrome / LSASS  4) Ransomware</div>
+    <div class="pr" data-d="~/hackerverse-dfir">display certificate.png</div>
+    <img alt="EC-Council Hackerverse certificate of participation" src="__CERT__">
+  </div>
+
+  <!-- ========== STEGO / CRYPTIC CANVAS ========== -->
+  <div class="bar"><b>kali@kali</b>: ~/Stego Artifacts</div>
+  <div class="win">
+    <h2>[1] Level 1 — Cryptic Canvas</h2>
+
+    <h3># Challenge 1 — The Hidden Voice (Audio.wav)</h3>
+    <div class="pr" data-d="~/Stego Artifacts">file Audio.wav; exiftool Audio.wav; strings Audio.wav | head -30</div>
+    <div class="o">Audio.wav: RIFF (little-endian) data, WAVE audio, Microsoft PCM, 8 bit, mono 11050 Hz</div>
+    <div class="c"># Uploaded the WAV to an online Morse audio decoder (adaptive). Output used only two symbols:
+# -----  = 0     and     .----  = 1   → the Morse was a carrier for a binary stream.</div>
+    <div class="pr" data-d="~/Stego Artifacts">echo "0110011001101100011000010110011101111011...01111101" | perl -lpe '$_=pack("B*",$_)'</div>
+    <div class="o">Flag: <span class="f">flag{binary_audio_secrets}</span>   <span class="c">(6-5-7 letters, matches flag{xxxxxx_xxxxx_xxxxxxx})</span></div>
+
+    <h3># Challenge 2 — JFIF magic bytes (Cat.jpg)</h3>
+    <div class="o">Answer: <span class="f">FF D8 FF E0</span>   <span class="c"># FF D8 = SOI, FF E0 = APP0 → "JFIF"</span></div>
+    <div class="pr" data-d="~/Stego Artifacts">binwalk -e Cat.jpg</div>
+    <div class="o bad">Extractor Exception: ... use '--run-as=root'</div>
+    <div class="pr" data-d="~/Stego Artifacts">steghide extract -sf Cat.jpg</div>
+    <div class="o bad">steghide: the file format of the file "Cat.jpg" is not supported.</div>
+    <div class="pr" data-d="~/Stego Artifacts">file Cat.jpg; exiftool Cat.jpg</div>
+    <div class="o">Cat.jpg: data
+Error : File format error     <span class="c"># header corrupted → repair a COPY</span></div>
+    <div class="pr" data-d="~/Stego Artifacts">cp Cat.jpg Cat_fixed.jpg &amp;&amp; chmod u+w Cat_fixed.jpg
+printf '\xff\xd8\xff\xe0' | dd of=Cat_fixed.jpg bs=1 seek=0 conv=notrunc
+printf '\x4a\x46\x49\x46\x00' | dd of=Cat_fixed.jpg bs=1 seek=6 conv=notrunc
+file Cat_fixed.jpg</div>
+    <div class="pr" data-d="~/Stego Artifacts">steghide extract -sf Cat_fixed.jpg</div>
+    <div class="o">Enter passphrase: <span class="c">(now prompts → valid JPEG with embedded data)</span>
+wrote extracted data to "flag.txt".</div>
+    <div class="pr" data-d="~/Stego Artifacts">cat flag.txt | base64 -d</div>
+    <div class="o">flag.txt : Q1RGe3N0ZWcwXzFzX2NvMGx9
+Flag     : <span class="f">CTF{steg0_1s_co0l}</span></div>
+
+    <h3># Challenges 4 &amp; 5 — Encoded_Dump.txt (decoys + real secret)</h3>
+    <div class="pr" data-d="~/Encoded Artifact">cat Encoded_Dump.txt</div>
+    <div class="o">Hint 1 (b64 → reversed) : ".eno tsuj si eurt ,syoced era owT"  → two strings are decoys
+Hint 2 (b64)            : Process: Base58 → ROT13 → BASE64 → XOR (Hex Key: 342120)</div>
+    <div class="o">Challenge 4 answer: <span class="f">Base58 → ROT13 → Base64 → XOR (Hex Key: 342120)</span></div>
+    <div class="pr" data-d="~/Encoded Artifact">python3 -c "import base58,base64,codecs;b=base58.b58decode('2A6fz3V1RQkk4RgpctzF5bPYFCaCXsLLb7Jxot4');r=codecs.decode(b.decode(),'rot13');d=base64.b64decode(r);k=bytes.fromhex('342120');print(bytes(c^k[i%3] for i,c in enumerate(d)).decode())"</div>
+    <div class="o">pz1up1c2KJWHr1A5IJWVsHE2HJIq → cm1hc1p2XWJUe1N5VWJIfUR2UWVd → rmasZv]bT{SyUbH}DvQe] → 
+Challenge 5 flag: <span class="f">FLAG{ViCtOrYaChIeVeD}</span>
+<span class="c"># CyberChef equivalent: From Base58 → ROT13 → From Base64 → XOR (Hex 342120)</span></div>
+  </div>
+
+  <!-- ========== NETWORK FORENSICS ========== -->
+  <div class="bar"><b>kali@kali</b>: ~/Pcap Artifacts</div>
+  <div class="win">
+    <h2>[2] Network Forensics — Synixon ChatOps breach</h2>
+    <div class="c"># synixon_breach_capture.pcapng, exported as plain-text dissections. Attacker: 10.10.1.2 → Victim: 10.10.1.111</div>
+    <div class="pr" data-d="~/Pcap Artifacts">tshark -r synixon_breach_capture.pcapng -Y http.request -T fields -e frame.number -e ip.src -e http.request.method -e http.host -e http.request.uri</div>
+    <div class="pr" data-d="~/Pcap Artifacts">tshark -r synixon_breach_capture.pcapng -Y websocket -T fields -e frame.number -e ip.src -e text</div>
+    <div class="pr" data-d="~/Pcap Artifacts">tshark -r synixon_breach_capture.pcapng -q -z follow,tcp,ascii,N      <span class="c"># reverse-shell stream</span></div>
+    <table>
+      <tr><th>#</th><th>Question</th><th>Answer</th><th>Evidence (frame)</th></tr>
+      <tr><td>1</td><td>Attacker signup email</td><td class="pend">[fill in from POST body]</td><td>POST / (236, 303) — form body not in export</td></tr>
+      <tr><td>2</td><td>Supervisor email reset via WebSocket</td><td class="pend">[fill in from WS text]</td><td>WebSocket frames 422–476, 570–573 (port 5000)</td></tr>
+      <tr><td>3</td><td>LFI debug page</td><td><span class="f">debug-view.php</span></td><td>1164 <code>/syni_dev/debug-view.php</code>, 1168 <code>?file=history.php</code></td></tr>
+      <tr><td>4</td><td>Log file read via LFI</td><td><span class="f">legacy_dev_keys.log</span></td><td>1186 <code>?file=../../../../../../../opt/syni_dev/legacy_dev_keys.log</code> (1176 read /etc/passwd)</td></tr>
+      <tr><td>5</td><td>New admin account email</td><td class="pend">[fill in from POST / WS]</td><td>Check POSTs 1312, 1631, 1901+ and WS 1259–1286</td></tr>
+      <tr><td>6</td><td>New web service port</td><td><span class="f">17645</span></td><td>1321 onward, 10.10.1.2 → 10.10.1.111:17645</td></tr>
+      <tr><td>7</td><td>Hidden admin login page</td><td><span class="f">admin_login_ERHG23W2.php</span></td><td>1597 GET, 1631 POST, 1635 dashboard</td></tr>
+      <tr><td>8</td><td>Legacy feedback service port</td><td><span class="f">5000</span></td><td>1826 <code>GET /legacy-feedback</code> on :5000</td></tr>
+      <tr><td>9</td><td>Reverse-shell callback</td><td><span class="f">10.10.1.2:8998</span></td><td>2249–2251 (victim connects out to attacker :8998)</td></tr>
+      <tr><td>10</td><td>Root flag</td><td><span class="f">flag{A1EL2L8P}</span></td><td>2299 / 2307 — <code>cat /home/flag.txt</code></td></tr>
+    </table>
+    <div class="o c">Shell session replayed: whoami (typo "whomai" → /usr/bin/whoami → root) → find / -name flag.txt (first typo'd as /usr/bind/find) → /home/flag.txt → cat.
+Note: rows 1, 2 and 5 live in HTTP/WebSocket bodies that the text export collapsed; pull them with the tshark commands above.</div>
+  </div>
+
+  <!-- ========== AUTOPSY / CHROME / LSASS ========== -->
+  <div class="bar"><b>kali@kali</b>: ~/chrome_cracker</div>
+  <div class="win">
+    <h2>[3] Autopsy — Chrome + LSASS (chaincrypto.com)</h2>
+    <div class="c"># Guidance taken from the chat.deepseek.com session. Tools on the Windows Forensic VM: Autopsy 4.21.0, FTK Imager, x32dbg/x64dbg, Wireshark, Sysinternals.</div>
+    <div class="pr" data-d="~/chrome_cracker">unzip chrome_cracker.zip        <span class="c"># right-click → Extract All on the VM Desktop</span></div>
+    <div class="o">lsass.DMP   |   Chrome profile (User Data / Default)</div>
+    <div class="c"># Autopsy: New Case → Add Data Source → Logical Files → select the extracted chrome_cracker folder → ingest.</div>
+    <table>
+      <tr><th>#</th><th>Question</th><th>Method / answer</th></tr>
+      <tr><td>1</td><td>Tool used to extract MasterKey from lsass.DMP</td><td>Suggested by DeepSeek: <b>pypykatz</b> (DPAPI masterkey parsing from minidump) — mimikatz is the alternative. <span class="pend">Confirm against your submitted answer.</span></td></tr>
+      <tr><td>2</td><td>File holding Base64 <code>encrypted_key</code></td><td><b>Local State</b> (JSON in Chrome User Data)</td></tr>
+      <tr><td>3</td><td>Attacker's Windows username</td><td>Autopsy file tree → <code>C:\Users\&lt;username&gt;\AppData\Local\Google\Chrome\User Data\</code> — the folder name. <span class="pend">[record value]</span></td></tr>
+      <tr><td>4</td><td>First 10 chars of MasterKey</td><td><code>pypykatz lsa minidump lsass.DMP</code> (dpapi section) → masterkey hex, first 10 chars. <span class="pend">[record value]</span></td></tr>
+      <tr><td>5</td><td>First 10 chars of Final Secret Key</td><td>Base64-decode <code>encrypted_key</code> (strip "DPAPI" prefix), decrypt with the MasterKey → AES key. <span class="pend">[record value]</span></td></tr>
+      <tr><td>6</td><td>Username / password for chaincrypto.com</td><td>Open <b>Login Data</b> (SQLite, <code>logins</code> table) → decrypt password blob with AES-GCM using the Final Secret Key. <span class="pend">[record value]</span></td></tr>
+    </table>
+    <div class="o c">Challenges 3 and 4 (username → MasterKey) are the pivot: the username locates the profile, and the MasterKey unlocks challenges 5 and 6.
+Values for rows 3–6 were not part of the chat, so they are left for you to fill in from your lab output.</div>
+  </div>
+
+  <!-- ========== RANSOMWARE ========== -->
+  <div class="bar"><b>kali@kali</b>: ~/ransomware</div>
+  <div class="win">
+    <h2>[4] Ransomware challenge</h2>
+    <div class="box"><b>NOT SOLVED.</b> I was unable to solve the final question on the ransomware challenge. No flag or answer was recovered for it, and none is claimed in this writeup.</div>
+  </div>
+
+  <!-- ========== SUMMARY ========== -->
+  <div class="bar"><b>kali@kali</b>: ~/hackerverse-dfir — summary</div>
+  <div class="win">
+    <div class="pr" data-d="~/hackerverse-dfir">cat tools_used.txt</div>
+    <div class="o">Kali: file, exiftool, strings, xxd, dd, printf, binwalk, steghide, perl, python3 (base58), tshark, Wireshark
+Online/other: Morse audio decoder, CyberChef
+Windows VM: Autopsy 4.21.0, pypykatz (suggested), SQLite viewer
+Lessons: broken magic bytes defeat stego tools — repair a copy first; "unsupported format" is itself a clue; always follow TCP streams for reverse shells.</div>
+    <div class="pr" data-d="~/hackerverse-dfir">exit</div>
+  </div>
+
+</div>
+</body>
+</html>
